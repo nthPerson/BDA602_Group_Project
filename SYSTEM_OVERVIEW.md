@@ -107,47 +107,47 @@ This is an ML **engineering** project, not a research contribution.
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          User (Streamlit UI)                        │
-│                    Inputs: paragraph / claim / draft                 │
+│                    Inputs: paragraph / claim / draft                │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │
                                ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                     Orchestration Layer (LangGraph)                   │
+│                     Orchestration Layer (LangGraph)                  │
 │                                                                      │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────┐   │
-│  │  Agent 1:     │    │  Agent 2:     │    │  Agent 3:            │   │
-│  │  Query &      │───▶│  Primary      │───▶│  Citation            │   │
-│  │  Intent       │    │  Retrieval    │    │  Expansion           │   │
-│  └──────────────┘    └──────────────┘    └──────────┬───────────┘   │
-│                                                      │               │
-│  ┌──────────────────────┐    ┌───────────────────────┘               │
-│  │  Agent 5:             │    │                                       │
-│  │  Synthesis            │◀──┤                                       │
-│  │                       │    │  ┌──────────────────────┐            │
-│  └──────────┬───────────┘    └──│  Agent 4:             │            │
-│             │                    │  Reranking +          │            │
-│             │                    │  Grounding            │            │
-│             │                    └──────────────────────┘            │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────────────┐  │
+│  │  Agent 1:    │     │  Agent 2:    │     │  Agent 3:            │  │
+│  │  Query &     │───▶│  Primary      │───▶│  Citation            │  │
+│  │  Intent      │     │  Retrieval   │     │  Expansion           │  │
+│  └──────────────┘     └──────────────┘     └──────────┬───────────┘  │
+│                                                       │              │
+│  ┌──────────────────────┐     ┌───────────────────────┘              │
+│  │  Agent 5:            │     │                                      │
+│  │  Synthesis           │◀───┤                                       |
+│  │                      │     │       ┌──────────────────────┐       │
+│  └──────────┬───────────┘     └───────│  Agent 4:            │       │
+│             │                         │  Reranking +         │       │
+│             │                         │  Grounding           │       │
+│             │                         └──────────────────────┘       │
 └─────────────┼────────────────────────────────────────────────────────┘
               │
               ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                     Streamlit UI — Results Display                    │
-│            Ranked citations / justifications / snippets               │
+│                     Streamlit UI — Results Display                   │
+│            Ranked citations / justifications / snippets              │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Data Infrastructure (Backing Stores)
 
 ```
-┌────────────────────────────────┐     ┌──────────────────────────────┐
+┌─────────────────────────────────┐     ┌───────────────────────────────┐
 │         Qdrant (Docker)         │     │    SQLite (Local File)        │
 │                                 │     │                               │
 │  • Paper embeddings             │     │  • Paper metadata             │
 │  • Payload-filtered search      │     │  • Citation graph edges       │
 │  • 384-dim or 768-dim vectors   │     │  • references / cited-by      │
-│                                 │     │  • Evaluation ground truth     │
-└────────────────────────────────┘     └──────────────────────────────┘
+│                                 │     │  • Evaluation ground truth    │
+└─────────────────────────────────┘     └───────────────────────────────┘
 ```
 
 ### Key Architectural Principle: The Pipeline State Object
