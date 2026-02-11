@@ -18,7 +18,7 @@
 |---|---|
 | `SYSTEM_OVERVIEW.md` | Authoritative technical design — architecture, data models, agent specs, dependency stack |
 | `DEVELOPMENT_ROADMAP.md` | 10-stage incremental plan with acceptance criteria and test inventories |
-| `docs/SETUP_GUIDE.md` | Teammate-friendly setup instructions |
+| `docs/SETUP_GUIDE.md` | Teammate-friendly setup instructions (update as necessary) |
 | `docs/stages/STAGE_*.md` | Per-stage implementation details, test lists, and teammate explanations |
 
 **Always read `SYSTEM_OVERVIEW.md` before making architectural decisions.** It is the source of truth for data models, agent I/O contracts, and technology choices.
@@ -107,7 +107,7 @@ tests/
 
 Update this section as stages are completed. Check the box and fill in the date.
 
-- [ ] **Stage 0** — Project Scaffolding (pyproject.toml, docker-compose, project dirs)
+- [x] **Stage 0** — Project Scaffolding (pyproject.toml, docker-compose, project dirs) — ✅ 2026-02-10
 - [ ] **Stage 1** — Data Models & Database Layer (models.py, db.py, config.py)
 - [ ] **Stage 2** — Data Acquisition (openalex_client.py, corpus_builder.py)
 - [ ] **Stage 3** — Embedding & Indexing (embedder.py, qdrant_store.py)
