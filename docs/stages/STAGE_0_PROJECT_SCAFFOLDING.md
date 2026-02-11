@@ -1,6 +1,6 @@
 # Stage 0 — Project Scaffolding
 
-> **Status:** Not Started
+> **Status:** ✅ Complete
 > **Depends on:** Nothing — this is the first stage
 > **Estimated effort:** 1–2 hours
 
@@ -114,5 +114,4 @@ This file contains shared pytest configuration:
 
 ---
 
-*Completed by: [name] on [date]*
-*Reviewed by: [name] on [date]*
+*Completed by: Claude Code on 2026-02-10*

@@ -1,0 +1,122 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bda602-citation-recommender"
+version = "0.1.0"
+description = "Agentic Academic Paper Citation Recommendation System"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "BDA602 Group Project Team"}
+]
+dependencies = [
+    # Orchestration
+    "langgraph>=0.2.0",
+    "langchain>=0.3.0",
+    "langchain-openai>=0.2.0",
+
+    # LLM & Structured Output
+    "openai>=1.0.0",
+    "instructor>=1.0.0",
+
+    # Embeddings & Reranking
+    "sentence-transformers>=2.2.0",
+    "torch>=2.0.0",
+
+    # Vector Store
+    "qdrant-client>=1.12.0",
+
+    # Data Source
+    "pyalex>=0.13",
+
+    # Data Validation & Settings
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+
+    # Utilities
+    "requests>=2.31.0",
+    "httpx>=0.24.0",
+    "python-dotenv>=1.0.0",
+
+    # UI
+    "streamlit>=1.39.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+
+    # Linting & Formatting
+    "ruff>=0.1.0",
+
+    # Type Checking
+    "mypy>=1.5.0",
+
+    # Jupyter
+    "jupyter>=1.0.0",
+    "ipykernel>=6.25.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=src",
+    "--cov-report=term-missing",
+]
+markers = [
+    "integration: marks tests requiring external services (Qdrant, OpenAI)",
+    "slow: marks tests that take >10 seconds",
+]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+"tests/**" = ["B011"]     # Allow assert False in tests
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
