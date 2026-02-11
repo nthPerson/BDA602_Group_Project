@@ -1,6 +1,6 @@
 # Stage 2 — Data Acquisition
 
-> **Status:** Not Started
+> **Status:** ✅ Complete
 > **Depends on:** Stage 1 (Data Models & Database Layer)
 > **Estimated effort:** 4–6 hours (mostly waiting for API responses)
 
@@ -176,5 +176,4 @@ About 30–60 minutes for the first run. OpenAlex has generous rate limits (espe
 
 ---
 
-*Completed by: [name] on [date]*
-*Reviewed by: [name] on [date]*
+*Completed by: Claude Code on 2026-02-10*
