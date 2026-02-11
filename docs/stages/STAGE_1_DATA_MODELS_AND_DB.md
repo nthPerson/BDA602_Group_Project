@@ -1,6 +1,6 @@
 # Stage 1 — Data Models & Database Layer
 
-> **Status:** Not Started
+> **Status:** ✅ Complete
 > **Depends on:** Stage 0 (Project Scaffolding)
 > **Estimated effort:** 3–5 hours
 
@@ -164,5 +164,4 @@ Agent 3 uses this graph to find related papers that simple text search might mis
 
 ---
 
-*Completed by: [name] on [date]*
-*Reviewed by: [name] on [date]*
+*Completed by: Claude Code on 2026-02-10*

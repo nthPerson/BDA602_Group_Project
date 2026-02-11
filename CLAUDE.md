@@ -108,8 +108,8 @@ tests/
 Update this section as stages are completed. Check the box and fill in the date.
 
 - [x] **Stage 0** — Project Scaffolding (pyproject.toml, docker-compose, project dirs) — ✅ 2026-02-10
-- [ ] **Stage 1** — Data Models & Database Layer (models.py, db.py, config.py)
-- [ ] **Stage 2** — Data Acquisition (openalex_client.py, corpus_builder.py)
+- [x] **Stage 1** — Data Models & Database Layer (models.py, db.py, config.py) — ✅ 2026-02-10
+- [x] **Stage 2** — Data Acquisition (openalex_client.py, corpus_builder.py) — ✅ 2026-02-10
 - [ ] **Stage 3** — Embedding & Indexing (embedder.py, qdrant_store.py)
 - [ ] **Stage 4** — Agents 1 & 2 (query_agent.py, retrieval_agent.py)
 - [ ] **Stage 5** — Agent 3: Citation Expansion (expansion_agent.py)
