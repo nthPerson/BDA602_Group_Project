@@ -1,14 +1,16 @@
 """OpenAlex API client for fetching academic paper metadata.
 
 This module provides a wrapper around the pyalex library with support for:
-- Querying AI/ML papers by concept and date range
+- Querying AI/ML papers by topics, subfields, or concepts (deprecated) and date range
 - Pagination through large result sets
 - Rate limiting to respect API guidelines
+- Retry logic with exponential backoff for transient errors
 - Parsing API responses into Paper and CitationEdge objects
 - Local caching of raw API responses
 """
 
 import json
+import logging
 import time
 from collections.abc import Generator
 from dataclasses import dataclass, field
@@ -17,6 +19,7 @@ from typing import Any
 
 import pyalex
 from pyalex import Works
+from requests.exceptions import HTTPError, RequestException
 
 from src.data.models import CitationEdge, Paper
 
@@ -27,27 +30,84 @@ class OpenAlexConfig:
 
     Attributes:
         email: Polite pool email for faster rate limits.
-        concepts: OpenAlex concept IDs to filter by (AI, ML, NLP, CV).
+        filter_mode: Subject filter mode - "topics" (recommended), "subfields", or "concepts" (deprecated).
+        topics: OpenAlex topic IDs to filter by (T-prefixed). Used when filter_mode="topics".
+        subfields: OpenAlex subfield IDs to filter by. Used when filter_mode="subfields".
+        concepts: DEPRECATED - OpenAlex concept IDs (C-prefixed). Used when filter_mode="concepts".
         from_year: Minimum publication year (inclusive).
         to_year: Maximum publication year (inclusive).
         per_page: Number of results per API page.
         rate_limit_delay: Seconds to wait between API calls.
+        max_retries: Maximum number of retries for failed requests.
+        retry_backoff: Exponential backoff multiplier for retries.
         cache_dir: Directory to cache raw API responses.
     """
 
     email: str = "your-email@example.com"
+    filter_mode: str = "topics"  # "topics", "subfields", or "concepts"
+
+    # Topics (recommended): Specific, high-quality AI/ML research areas
+    topics: list[str] = field(
+        default_factory=lambda: [
+            # Core Neural Networks & Deep Learning
+            "T10320",  # Neural Networks and Applications (247k works)
+            "T10036",  # Advanced Neural Network Applications/Computer Vision (92k works)
+            "T11273",  # Advanced Graph Neural Networks (47k works)
+            # Machine Learning & Algorithms
+            "T12072",  # Machine Learning and Algorithms (34k works)
+            "T12535",  # Machine Learning and Data Classification (37k works)
+            "T11689",  # Adversarial Robustness in Machine Learning (50k works)
+            "T12026",  # Explainable Artificial Intelligence (40k works)
+            "T11714",  # Multimodal Machine Learning Applications (48k works)
+            "T11512",  # Anomaly Detection Techniques
+            "T11307",  # Domain Adaptation and Few-Shot Learning
+            "T10028",  # Topic Modeling (151k works)
+            "T10100",  # Metaheuristic Optimization Algorithms
+            # Natural Language Processing
+            "T10181",  # Natural Language Processing Techniques (284k works)
+            "T12031",  # Speech and Dialogue Systems
+            "T10201",  # Speech Recognition and Synthesis
+            "T10215",  # Semantic Web and Ontologies (169k works)
+            # Computer Vision & Image Processing
+            "T14339",  # Image Processing and 3D Reconstruction (233k works)
+            "T10057",  # Face and Expression Recognition (73k works)
+            "T10052",  # Medical Image Segmentation (82k works)
+            "T10331",  # Video Surveillance and Tracking (80k works)
+            "T10627",  # Advanced Image and Video Retrieval (116k works)
+            "T10531",  # Advanced Vision and Imaging (103k works)
+            # Robotics & Control
+            "T10462",  # Reinforcement Learning in Robotics
+            "T10586",  # Robotic Path Planning Algorithms (110k works)
+            "T10820",  # Fuzzy Logic and Control Systems
+        ]
+    )
+
+    # Subfields (broader coverage): Captures all topics within these subfields
+    subfields: list[str] = field(
+        default_factory=lambda: [
+            "1702",  # Artificial Intelligence
+            "1707",  # Computer Vision and Pattern Recognition
+        ]
+    )
+
+    # Concepts (deprecated): Legacy filtering method with poor recent coverage
     concepts: list[str] = field(
         default_factory=lambda: [
             "C154945302",  # Artificial Intelligence
             "C119857082",  # Machine Learning
             "C204321447",  # Natural Language Processing
-            "C154945302",  # Computer Vision (duplicate ID, will be deduplicated)
+            "C41008148",  # Computer Vision
+            "C50644808",  # Deep Learning
+            "C2776649807",  # Reinforcement Learning
         ]
     )
-    from_year: int = 2018
-    to_year: int = 2025
+
+    from_year: int = 2015
+    to_year: int = 2026
     per_page: int = 200
     rate_limit_delay: float = 0.1
+    max_retries: int = 5
+    retry_backoff: float = 2.0
     cache_dir: Path | None = None
 
 
@@ -55,7 +115,7 @@ class OpenAlexClient:
     """Client for fetching papers from OpenAlex API.
 
     This client wraps the pyalex library and provides methods for:
-    - Querying papers by concept, date range, and citation count
+    - Querying papers by topics, subfields, or concepts (deprecated), date range, and citation count
     - Paginating through result sets
     - Parsing API responses into Paper objects
     - Extracting citation edges
@@ -69,6 +129,7 @@ class OpenAlexClient:
             config: Configuration for API queries and rate limiting.
         """
         self.config = config
+        self.logger = logging.getLogger(__name__)
 
         # Configure pyalex with polite pool email for faster rate limits
         pyalex.config.email = config.email
@@ -81,37 +142,78 @@ class OpenAlexClient:
         self,
         max_results: int | None = None,
         filter_no_abstract: bool = True,
+        year_range: tuple[int, int] | None = None,
     ) -> Generator[Paper, None, None]:
         """Fetch AI/ML papers from OpenAlex.
 
-        This method queries OpenAlex for papers matching the configured concept
-        and date filters, sorts by citation count descending, and yields Paper
-        objects one at a time.
+        This method queries OpenAlex for papers matching the configured subject
+        filters (topics, subfields, or concepts) and date filters, sorts by
+        citation count descending, and yields Paper objects one at a time.
+        Includes retry logic for transient API errors.
 
         Args:
             max_results: Maximum number of papers to fetch. None for all.
             filter_no_abstract: If True, skip papers without abstracts.
+            year_range: Optional (from_year, to_year) tuple to override config years.
+                       Useful for bypassing pagination limits by fetching year-by-year.
 
         Yields:
             Paper objects parsed from OpenAlex API responses.
         """
-        # Build query with filters
+        # Build base query with common filters
+        query = Works()
+
+        # Add subject filter based on filter_mode
+        if self.config.filter_mode == "topics":
+            # Filter by specific topic IDs (most granular)
+            query = query.filter(topics={"id": "|".join(self.config.topics)})
+            self.logger.info(f"Using topic filter with {len(self.config.topics)} topics")
+        elif self.config.filter_mode == "subfields":
+            # Filter by subfield IDs (broader coverage - matches ANY topic, not just primary)
+            query = query.filter(topics={"subfield": {"id": "|".join(self.config.subfields)}})
+            self.logger.info(f"Using subfield filter with {len(self.config.subfields)} subfields")
+        elif self.config.filter_mode == "concepts":
+            # Legacy concept filtering (deprecated)
+            query = query.filter(concepts={"id": "|".join(self.config.concepts)})
+            self.logger.warning(
+                "Using deprecated concept filtering. Consider switching to 'topics' or 'subfields' mode."
+            )
+        else:
+            raise ValueError(
+                f"Invalid filter_mode: {self.config.filter_mode}. "
+                "Must be 'topics', 'subfields', or 'concepts'."
+            )
+
+        # Add common filters and sorting
+        # Note: Include article, proceedings-article (conferences), and preprint (arXiv)
+        # because AI/ML research is published primarily in conferences and preprints
+        # Use year_range override if provided, otherwise use config years
+        from_year, to_year = year_range if year_range else (self.config.from_year, self.config.to_year)
         query = (
-            Works()
-            .filter(
-                concepts={"id": "|".join(self.config.concepts)},
-                from_publication_date=f"{self.config.from_year}-01-01",
-                to_publication_date=f"{self.config.to_year}-12-31",
+            query.filter(
+                from_publication_date=f"{from_year}-01-01",
+                to_publication_date=f"{to_year}-12-31",
                 has_abstract=filter_no_abstract,
-                type="article",
+                type="article|proceedings-article|preprint",
             )
             .sort(cited_by_count="desc")
         )
 
-        # Paginate through results
+        # Paginate through results with retry logic
         count = 0
-        for page_num, page in enumerate(query.paginate(per_page=self.config.per_page), start=1):
-            # Rate limiting
+        page_num = 0
+        page_iterator = query.paginate(per_page=self.config.per_page)
+
+        while True:
+            # Fetch next page with retry logic
+            page = self._fetch_page_with_retry(page_iterator, page_num + 1)
+            if page is None:
+                # No more pages
+                break
+
+            page_num += 1
+
+            # Rate limiting (skip for first page)
             if page_num > 1:
                 time.sleep(self.config.rate_limit_delay)
 
@@ -119,6 +221,10 @@ class OpenAlexClient:
             for work in page:
                 # Skip papers without abstracts if filtering enabled
                 if filter_no_abstract and not self._has_abstract(work):
+                    continue
+
+                # Skip papers without titles
+                if not self._has_title(work):
                     continue
 
                 # Parse into Paper object
@@ -135,6 +241,48 @@ class OpenAlexClient:
                 if max_results and count >= max_results:
                     return
 
+    def _fetch_page_with_retry(
+        self,
+        page_iterator: Any,
+        page_num: int,
+    ) -> list[dict[str, Any]] | None:
+        """Fetch a page from the iterator with retry logic.
+
+        Args:
+            page_iterator: OpenAlex paginator iterator.
+            page_num: Current page number (for logging).
+
+        Returns:
+            List of works from the page, or None if iteration is complete.
+        """
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                # Try to get the next page
+                page = next(page_iterator)
+                return page
+
+            except StopIteration:
+                # Normal end of pagination
+                return None
+
+            except (HTTPError, RequestException) as e:
+                if attempt < self.config.max_retries:
+                    # Calculate backoff delay
+                    delay = self.config.retry_backoff ** attempt
+                    self.logger.warning(
+                        f"API error on page {page_num} (attempt {attempt + 1}/{self.config.max_retries + 1}): "
+                        f"{e}. Retrying in {delay:.1f}s..."
+                    )
+                    time.sleep(delay)
+                else:
+                    # Max retries exceeded
+                    self.logger.error(
+                        f"Failed to fetch page {page_num} after {self.config.max_retries + 1} attempts: {e}"
+                    )
+                    raise
+
+        return None
+
     def _has_abstract(self, work: dict[str, Any]) -> bool:
         """Check if a work has a non-empty abstract.
 
@@ -149,6 +297,21 @@ class OpenAlexClient:
             return False
         # Check if abstract is non-empty
         return len(abstract) > 0
+
+    def _has_title(self, work: dict[str, Any]) -> bool:
+        """Check if a work has a non-empty title.
+
+        Args:
+            work: Raw OpenAlex work dictionary.
+
+        Returns:
+            True if the work has a title, False otherwise.
+        """
+        title = work.get("title")
+        if not title:
+            return False
+        # Check if title is non-empty (after stripping whitespace)
+        return len(title.strip()) > 0
 
     def _parse_work_to_paper(self, work: dict[str, Any]) -> Paper:
         """Parse an OpenAlex work dictionary into a Paper object.

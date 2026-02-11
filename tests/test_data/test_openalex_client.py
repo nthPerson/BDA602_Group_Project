@@ -8,13 +8,50 @@ from src.data.openalex_client import OpenAlexClient, OpenAlexConfig
 
 @pytest.fixture
 def openalex_config() -> OpenAlexConfig:
-    """Create a test OpenAlex configuration.
+    """Create a test OpenAlex configuration with topics filter.
 
     Returns:
-        Test configuration with default values.
+        Test configuration with topics filter mode (default).
     """
     return OpenAlexConfig(
         email="test@example.com",
+        filter_mode="topics",
+        from_year=2018,
+        to_year=2025,
+        per_page=200,
+        rate_limit_delay=0.0,  # No delay for tests
+        cache_dir=None,  # No caching for tests
+    )
+
+
+@pytest.fixture
+def openalex_config_subfields() -> OpenAlexConfig:
+    """Create a test OpenAlex configuration with subfields filter.
+
+    Returns:
+        Test configuration with subfields filter mode.
+    """
+    return OpenAlexConfig(
+        email="test@example.com",
+        filter_mode="subfields",
+        from_year=2018,
+        to_year=2025,
+        per_page=200,
+        rate_limit_delay=0.0,  # No delay for tests
+        cache_dir=None,  # No caching for tests
+    )
+
+
+@pytest.fixture
+def openalex_config_concepts() -> OpenAlexConfig:
+    """Create a test OpenAlex configuration with concepts filter (deprecated).
+
+    Returns:
+        Test configuration with concepts filter mode.
+    """
+    return OpenAlexConfig(
+        email="test@example.com",
+        filter_mode="concepts",
         from_year=2018,
         to_year=2025,
         per_page=200,
@@ -125,6 +162,32 @@ def test_has_abstract_false(openalex_client: OpenAlexClient) -> None:
         "abstract_inverted_index": {},
     }
     assert openalex_client._has_abstract(work_empty_abstract) is False
+
+
+def test_has_title_true(openalex_client: OpenAlexClient, sample_openalex_work: dict) -> None:
+    """Test that _has_title returns True for works with titles."""
+    assert openalex_client._has_title(sample_openalex_work) is True
+
+
+def test_has_title_false(openalex_client: OpenAlexClient) -> None:
+    """Test that _has_title returns False for works without titles."""
+    work_no_title = {
+        "id": "https://openalex.org/W123",
+        "title": None,
+    }
+    assert openalex_client._has_title(work_no_title) is False
+
+    work_empty_title = {
+        "id": "https://openalex.org/W123",
+        "title": "",
+    }
+    assert openalex_client._has_title(work_empty_title) is False
+
+    work_whitespace_title = {
+        "id": "https://openalex.org/W123",
+        "title": "   ",
+    }
+    assert openalex_client._has_title(work_whitespace_title) is False
 
 
 def test_reconstruct_abstract(openalex_client: OpenAlexClient) -> None:
@@ -275,3 +338,58 @@ def test_extract_citation_edges_empty(openalex_client: OpenAlexClient) -> None:
 
     edges = openalex_client.extract_citation_edges(paper)
     assert len(edges) == 0
+
+
+def test_config_filter_mode_topics(openalex_config: OpenAlexConfig) -> None:
+    """Test that OpenAlexConfig uses topics filter mode by default."""
+    assert openalex_config.filter_mode == "topics"
+    assert len(openalex_config.topics) > 0
+    assert all(t.startswith("T") for t in openalex_config.topics)
+
+
+def test_config_filter_mode_subfields(openalex_config_subfields: OpenAlexConfig) -> None:
+    """Test that OpenAlexConfig can use subfields filter mode."""
+    assert openalex_config_subfields.filter_mode == "subfields"
+    assert len(openalex_config_subfields.subfields) > 0
+    assert all(s.isdigit() for s in openalex_config_subfields.subfields)
+
+
+def test_config_filter_mode_concepts(openalex_config_concepts: OpenAlexConfig) -> None:
+    """Test that OpenAlexConfig can use concepts filter mode (deprecated)."""
+    assert openalex_config_concepts.filter_mode == "concepts"
+    assert len(openalex_config_concepts.concepts) > 0
+    assert all(c.startswith("C") for c in openalex_config_concepts.concepts)
+
+
+def test_client_with_topics_mode(openalex_config: OpenAlexConfig) -> None:
+    """Test that OpenAlexClient initializes correctly with topics mode."""
+    client = OpenAlexClient(openalex_config)
+    assert client.config.filter_mode == "topics"
+    assert len(client.config.topics) > 0
+
+
+def test_client_with_subfields_mode(openalex_config_subfields: OpenAlexConfig) -> None:
+    """Test that OpenAlexClient initializes correctly with subfields mode."""
+    client = OpenAlexClient(openalex_config_subfields)
+    assert client.config.filter_mode == "subfields"
+    assert len(client.config.subfields) > 0
+
+
+def test_client_with_concepts_mode(openalex_config_concepts: OpenAlexConfig) -> None:
+    """Test that OpenAlexClient initializes correctly with concepts mode."""
+    client = OpenAlexClient(openalex_config_concepts)
+    assert client.config.filter_mode == "concepts"
+    assert len(client.config.concepts) > 0
+
+
+def test_invalid_filter_mode() -> None:
+    """Test that invalid filter_mode raises an error when fetching papers."""
+    config = OpenAlexConfig(
+        email="test@example.com",
+        filter_mode="invalid",  # Invalid mode
+    )
+    client = OpenAlexClient(config)
+
+    # Should raise ValueError when trying to fetch papers
+    with pytest.raises(ValueError, match="Invalid filter_mode"):
+        next(client.fetch_papers(max_results=1))

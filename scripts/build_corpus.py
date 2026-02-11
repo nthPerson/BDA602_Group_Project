@@ -8,7 +8,7 @@ Usage:
     python scripts/build_corpus.py [--max-papers N] [--cache-dir PATH]
 
 Examples:
-    # Build full corpus (15k-25k papers, takes 30-60 minutes)
+    # Build full corpus (25k-35k papers, takes 60-90 minutes with year-chunking)
     python scripts/build_corpus.py
 
     # Build small corpus for testing (500 papers, takes ~2 minutes)
@@ -34,14 +34,28 @@ def setup_logging(level: str = "INFO") -> None:
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR).
     """
+    # Create handlers with immediate flushing for real-time progress
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(level)
+
+    file_handler = logging.FileHandler("corpus_build.log")
+    file_handler.setLevel(level)
+
+    # Create formatter
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    stdout_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+
+    # Configure root logger
     logging.basicConfig(
         level=level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-            logging.FileHandler("corpus_build.log"),
-        ],
+        handlers=[stdout_handler, file_handler],
+        force=True,  # Force reconfiguration if already configured
     )
+
+    # Ensure stdout is flushed after each log message
+    sys.stdout.reconfigure(line_buffering=True)
 
 
 def parse_args() -> argparse.Namespace:
@@ -112,8 +126,9 @@ def main() -> int:
     # Create configurations
     openalex_config = OpenAlexConfig(
         email=settings.openalex_email,
-        from_year=2018,
-        to_year=2025,
+        filter_mode="subfields",  # Use subfields for comprehensive AI/ML coverage (bypasses topics-mode limitations)
+        from_year=2015,
+        to_year=2025,  # Updated to 2025 (2026 has minimal data)
         per_page=200,
         rate_limit_delay=settings.openalex_rate_limit_delay,
         cache_dir=args.cache_dir,
@@ -124,6 +139,8 @@ def main() -> int:
         max_papers=args.max_papers,
         batch_size=args.batch_size,
         cache_dir=args.cache_dir,
+        use_year_chunks=True,  # Enable year-by-year fetching to bypass pagination limits
+        max_papers_per_year=None,  # No per-year limit (each year stays under API limit naturally)
     )
 
     # Log configuration
@@ -133,6 +150,17 @@ def main() -> int:
     logger.info(f"Cache dir: {args.cache_dir or 'disabled'}")
     logger.info(f"OpenAlex email: {settings.openalex_email}")
     logger.info(f"Rate limit delay: {settings.openalex_rate_limit_delay}s")
+    logger.info(f"Year range: {openalex_config.from_year}-{openalex_config.to_year}")
+    logger.info(f"Filter mode: {openalex_config.filter_mode}")
+    if openalex_config.filter_mode == "topics":
+        logger.info(f"Topics: {len(openalex_config.topics)} AI/ML topic IDs")
+    elif openalex_config.filter_mode == "subfields":
+        logger.info(f"Subfields: {len(openalex_config.subfields)} subfield IDs (AI + Computer Vision)")
+    elif openalex_config.filter_mode == "concepts":
+        logger.info(f"Concepts (deprecated): {len(openalex_config.concepts)} concept IDs")
+    logger.info(f"Year-chunked mode: {corpus_config.use_year_chunks}")
+    if corpus_config.use_year_chunks:
+        logger.info(f"Max papers per year: {corpus_config.max_papers_per_year or 'unlimited'}")
     logger.info("")
 
     # Build corpus
