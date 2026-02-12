@@ -59,9 +59,7 @@ def create_tables(db: sqlite3.Connection) -> None:
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_citations_source ON citation_edges(source_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_citations_target ON citation_edges(target_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_papers_year ON papers(year)")
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_papers_citation_count ON papers(citation_count)"
-    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_papers_citation_count ON papers(citation_count)")
 
     db.commit()
 
@@ -372,6 +370,72 @@ def get_edge_count(db: sqlite3.Connection) -> int:
     cursor = db.cursor()
     cursor.execute("SELECT COUNT(*) FROM citation_edges")
     return cursor.fetchone()[0]
+
+
+def get_reference_ids(db: sqlite3.Connection, paper_id: str) -> list[str]:
+    """Get IDs of papers cited BY this paper (forward traversal).
+
+    Unlike get_references(), this returns only paper IDs without joining
+    the papers table — faster for graph traversal where full metadata
+    is not needed yet.
+
+    Args:
+        db: SQLite database connection.
+        paper_id: Paper ID to query references for.
+
+    Returns:
+        List of paper IDs that are cited by the given paper.
+    """
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT target_id FROM citation_edges WHERE source_id = ?",
+        (paper_id,),
+    )
+    return [row[0] for row in cursor.fetchall()]
+
+
+def get_cited_by_ids(db: sqlite3.Connection, paper_id: str) -> list[str]:
+    """Get IDs of papers that CITE this paper (backward traversal).
+
+    Unlike get_cited_by(), this returns only paper IDs without joining
+    the papers table — faster for graph traversal where full metadata
+    is not needed yet.
+
+    Args:
+        db: SQLite database connection.
+        paper_id: Paper ID to query citations for.
+
+    Returns:
+        List of paper IDs that cite the given paper.
+    """
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT source_id FROM citation_edges WHERE target_id = ?",
+        (paper_id,),
+    )
+    return [row[0] for row in cursor.fetchall()]
+
+
+def filter_to_corpus(db: sqlite3.Connection, paper_ids: list[str]) -> set[str]:
+    """Filter a list of paper IDs to only those present in the corpus.
+
+    Args:
+        db: SQLite database connection.
+        paper_ids: List of paper IDs to check.
+
+    Returns:
+        Set of paper IDs that exist in the papers table.
+    """
+    if not paper_ids:
+        return set()
+
+    cursor = db.cursor()
+    placeholders = ",".join("?" * len(paper_ids))
+    cursor.execute(
+        f"SELECT paper_id FROM papers WHERE paper_id IN ({placeholders})",
+        paper_ids,
+    )
+    return {row[0] for row in cursor.fetchall()}
 
 
 def paper_exists(db: sqlite3.Connection, paper_id: str) -> bool:

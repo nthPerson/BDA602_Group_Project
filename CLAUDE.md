@@ -112,7 +112,7 @@ Update this section as stages are completed. Check the box and fill in the date.
 - [x] **Stage 2** — Data Acquisition (openalex_client.py, corpus_builder.py) — ✅ 2026-02-10
 - [x] **Stage 3** — Embedding & Indexing (embedder.py, qdrant_store.py) — ✅ 2026-02-11
 - [x] **Stage 4** — Agents 1 & 2 (query_agent.py, retrieval_agent.py) — ✅ 2026-02-11
-- [ ] **Stage 5** — Agent 3: Citation Expansion (expansion_agent.py)
+- [x] **Stage 5** — Agent 3: Citation Expansion (expansion_agent.py) — ✅ 2026-02-12
 - [ ] **Stage 6** — Agent 4: Reranking & Grounding (reranking_agent.py)
 - [ ] **Stage 7** — Agent 5 + Orchestration (synthesis_agent.py, graph.py)
 - [ ] **Stage 8** — Evaluation Framework (metrics.py, dataset.py, runner.py)

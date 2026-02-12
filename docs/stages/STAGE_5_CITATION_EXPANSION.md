@@ -1,6 +1,6 @@
 # Stage 5 — Agent 3: Citation Expansion
 
-> **Status:** Not Started
+> **Status:** Complete
 > **Depends on:** Stage 4 (Agents 1 & 2 must be working)
 > **Estimated effort:** 3–4 hours
 
@@ -58,13 +58,13 @@ Output: Original 30 papers + up to 40 expanded papers = ~50-70 candidates
 
 ## Acceptance Criteria
 
-- [ ] Given 10 seed papers, Agent 3 returns originals PLUS additional papers from the citation graph
-- [ ] No duplicates in the expanded set (verified programmatically)
-- [ ] `max_expansion` limit is respected (never exceeds configured maximum)
-- [ ] Papers appearing in multiple seed papers' citation lists are prioritized
-- [ ] A paper with no citation edges is handled gracefully (no crash, no expansion for that paper)
-- [ ] The entire expansion step completes in <1 second for typical inputs (10 seed papers)
-- [ ] All unit tests pass
+- [x] Given 10 seed papers, Agent 3 returns originals PLUS additional papers from the citation graph
+- [x] No duplicates in the expanded set (verified programmatically)
+- [x] `max_expansion` limit is respected (never exceeds configured maximum)
+- [x] Papers appearing in multiple seed papers' citation lists are prioritized
+- [x] A paper with no citation edges is handled gracefully (no crash, no expansion for that paper)
+- [x] The entire expansion step completes in <1 second for typical inputs (10 seed papers)
+- [x] All unit tests pass (17/17 passing)
 
 ---
 
@@ -146,5 +146,5 @@ When the expansion pool has more papers than `max_expansion`, we need to pick th
 
 ---
 
-*Completed by: [name] on [date]*
+*Completed by: Claude on 2026-02-12*
 *Reviewed by: [name] on [date]*
