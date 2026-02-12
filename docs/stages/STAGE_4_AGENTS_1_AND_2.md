@@ -1,6 +1,6 @@
 # Stage 4 — Agents 1 & 2: Query Analysis + Primary Retrieval
 
-> **Status:** Not Started
+> **Status:** Complete ✅ (2026-02-11)
 > **Depends on:** Stage 3 (Embedding & Indexing — Qdrant must be populated)
 > **Estimated effort:** 4–6 hours
 
@@ -57,13 +57,13 @@ User text: "Recent advances in transformer architectures have shown
 
 ## Acceptance Criteria
 
-- [ ] Agent 1 accepts a paragraph and returns a valid `QueryAnalysis` (keywords, intent, expanded query)
-- [ ] Agent 1 fallback produces reasonable keywords when OpenAI is unreachable
-- [ ] Agent 2 accepts a `QueryAnalysis` and returns ≤30 `ScoredPaper` results
-- [ ] Agent 2 results are sorted by similarity score (highest first)
-- [ ] Metadata filters (year range) work correctly
-- [ ] Manual end-to-end test: paste an abstract → get back relevant papers
-- [ ] All unit and integration tests pass
+- [x] Agent 1 accepts a paragraph and returns a valid `QueryAnalysis` (keywords, intent, expanded query)
+- [x] Agent 1 fallback produces reasonable keywords when OpenAI is unreachable
+- [x] Agent 2 accepts a `QueryAnalysis` and returns ≤30 `ScoredPaper` results
+- [x] Agent 2 results are sorted by similarity score (highest first)
+- [x] Metadata filters (year range) work correctly
+- [x] Manual end-to-end test: paste an abstract → get back relevant papers
+- [x] All unit and integration tests pass (24 unit + 2 integration)
 
 ---
 
@@ -173,5 +173,37 @@ If the OpenAI API is down or unreachable, Agent 1 falls back to a simple keyword
 
 ---
 
-*Completed by: [name] on [date]*
+## Implementation Notes
+
+### Agent 1 — Query Agent (`src/agents/query_agent.py`)
+
+- Uses `instructor` library wrapping OpenAI's `gpt-4o-mini` for structured output
+- LLM response is validated via a Pydantic `QueryAnalysisResponse` model, then converted to the `QueryAnalysis` dataclass
+- System prompt instructs the LLM to act as an "AI research librarian" — extracts keywords, classifies intent, and reformulates text
+- **Fallback mechanism:** If the LLM fails after retries, falls back to regex-based keyword extraction (stop word removal + frequency ranking), sets intent to `BACKGROUND`, uses raw text as the expanded query, and sets confidence to 0.3
+- Intent parsing is case-insensitive and defaults to `BACKGROUND` for unrecognized values
+
+### Agent 2 — Retrieval Agent (`src/agents/retrieval_agent.py`)
+
+- Pure embedding + vector search — no LLM involved
+- Uses `Embedder.embed_query()` which automatically applies the BGE instruction prefix
+- Delegates search to `QdrantStore.search()` with optional year and citation count filters
+- Maps Qdrant result dicts to typed `ScoredPaper` dataclass objects
+- Gracefully handles missing `query_analysis` in state (returns empty candidates + error)
+
+### Pipeline State (`src/orchestration/state.py`)
+
+- `PipelineState` TypedDict for LangGraph compatibility (used from Stage 7 onward)
+- Uses `total=False` to allow partial state updates from each agent
+- Mirrors the `AgentState` dataclass in `models.py` but as a TypedDict
+
+### Test Results
+
+- **24 unit tests** — all pass (mocked OpenAI and Qdrant, no external services)
+- **2 integration tests** — pass against live Qdrant with 82,980 indexed papers
+- **Coverage:** `query_agent.py` 100%, `retrieval_agent.py` 93%
+
+---
+
+*Completed by: Claude (AI assistant) on 2026-02-11*
 *Reviewed by: [name] on [date]*
