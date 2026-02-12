@@ -1,6 +1,6 @@
 # Stage 6 — Agent 4: Reranking & Grounding
 
-> **Status:** Not Started
+> **Status:** Complete
 > **Depends on:** Stage 5 (Citation Expansion — the full candidate set must be available)
 > **Estimated effort:** 5–7 hours
 
@@ -74,13 +74,13 @@ This is the classic **retrieve → rerank → generate** pattern used in product
 
 ## Acceptance Criteria
 
-- [ ] Cross-encoder reranking re-orders candidates (output differs from cosine similarity order)
-- [ ] Top-K parameter is respected (default: 10)
-- [ ] Top 5 papers receive grounding output with all required fields
-- [ ] Justifications reference content from the candidate paper (not hallucinated)
-- [ ] Parallel grounding completes in <5 seconds for 5 papers
-- [ ] Full Agent 4 pipeline completes in <10 seconds for 50 candidates on CPU
-- [ ] All tests pass
+- [x] Cross-encoder reranking re-orders candidates (output differs from cosine similarity order)
+- [x] Top-K parameter is respected (default: 10)
+- [x] Top 5 papers receive grounding output with all required fields
+- [x] Justifications reference content from the candidate paper (not hallucinated)
+- [x] Parallel grounding completes in <5 seconds for 5 papers
+- [x] Full Agent 4 pipeline completes in <10 seconds for 50 candidates on CPU
+- [x] All tests pass
 
 ---
 
@@ -168,5 +168,5 @@ When we need to make 5 independent LLM calls (one per paper for grounding), we c
 
 ---
 
-*Completed by: [name] on [date]*
+*Completed by: Claude on 2026-02-12*
 *Reviewed by: [name] on [date]*
