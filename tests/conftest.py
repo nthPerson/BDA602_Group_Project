@@ -6,6 +6,11 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from dotenv import load_dotenv
+
+# Load .env file at test startup (before any tests run)
+# This ensures OPENAI_API_KEY and other vars are available from .env
+load_dotenv()
 
 
 @pytest.fixture(scope="session")
