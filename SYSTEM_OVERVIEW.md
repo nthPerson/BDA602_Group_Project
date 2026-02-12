@@ -198,7 +198,7 @@ class PipelineState:
 #### Corpus Scope
 
 - **Domains:** CS.AI, CS.LG, CS.CL, CS.CV (mapped to OpenAlex concepts/topics)
-- **Time range:** 2018–2025 (keeps the corpus modern and relevant)
+- **Time range:** 2015–2025 (keeps the corpus modern and relevant)
 - **Target size:** ~15,000–25,000 papers
 - **Content per paper:** title + abstract + (optionally) introduction section
 
