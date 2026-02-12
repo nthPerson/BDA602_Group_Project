@@ -246,6 +246,21 @@ def get_papers_by_ids(db: sqlite3.Connection, paper_ids: list[str]) -> list[Pape
     return [_row_to_paper(row) for row in rows]
 
 
+def get_all_papers(db: sqlite3.Connection) -> list[Paper]:
+    """Fetch all papers from the database.
+
+    Args:
+        db: SQLite database connection.
+
+    Returns:
+        List of all Paper instances in the database.
+    """
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM papers")
+    rows = cursor.fetchall()
+    return [_row_to_paper(row) for row in rows]
+
+
 def get_papers_by_filter(
     db: sqlite3.Connection,
     year_min: int | None = None,
