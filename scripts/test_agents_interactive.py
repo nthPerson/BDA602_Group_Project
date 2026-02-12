@@ -1,12 +1,13 @@
-"""Interactive test script for Agents 1 → 2 → 3 → 4.
+"""Interactive test script for the full 5-agent pipeline.
 
-This script demonstrates the full pipeline through Agent 4:
+This script demonstrates the complete pipeline:
 1. Agent 1 analyzes user text (LLM-based intent + keyword extraction)
 2. Agent 2 retrieves relevant papers from Qdrant
 3. Agent 3 expands candidates via the citation graph
 4. Agent 4 reranks candidates with cross-encoder + grounds top papers with LLM
+5. Agent 5 synthesizes final ranked recommendations with confidence filtering
 
-Run this script to test the agents with real API calls and see the results.
+Run this script to test all agents with real API calls and see the results.
 
 Requirements:
     - OPENAI_API_KEY set in .env
@@ -24,6 +25,7 @@ from src.agents.expansion_agent import ExpansionAgent, ExpansionAgentConfig
 from src.agents.query_agent import QueryAgent, QueryAgentConfig
 from src.agents.reranking_agent import RerankingAgent, RerankingAgentConfig
 from src.agents.retrieval_agent import RetrievalAgent, RetrievalAgentConfig
+from src.agents.synthesis_agent import SynthesisAgent, SynthesisAgentConfig
 from src.config import Settings
 from src.indexing.embedder import Embedder, EmbedderConfig
 from src.indexing.qdrant_store import QdrantConfig, QdrantStore
@@ -56,6 +58,9 @@ agent4 = RerankingAgent(
     cross_encoder,
     openai_client,
 )
+
+print("Initializing Agent 5 (Synthesis)...")
+agent5 = SynthesisAgent(SynthesisAgentConfig(), db)
 
 print("\n" + "=" * 70)
 print("Ready! Testing with sample queries...")
@@ -164,6 +169,33 @@ for test_name, user_text in test_cases:
             print(f"     Confidence: {paper.confidence:.2f}")
             print(f"     Snippet: {paper.supporting_snippet[:150]}...")
             print(f"     Justification: {paper.justification[:200]}...")
+
+    # Agent 5: Synthesis
+    print(f"\n{'─' * 70}")
+    print("Agent 5: Synthesis")
+    print("─" * 70)
+    state.update(agent5.run(state))
+    recommendations = state["final_recommendations"]
+    print(f"Produced {len(recommendations)} final recommendations")
+    print(f"Latency: {state['metadata'].get('agent5_latency_s', 'N/A')}s")
+
+    # Show final recommendations
+    if recommendations:
+        print("\nFinal Recommendations:")
+        for rec in recommendations:
+            print(f"\n  {rec.rank}. {rec.title}")
+            print(f"     Paper ID: {rec.paper_id}")
+            if rec.authors:
+                print(f"     Authors: {', '.join(rec.authors[:3])}")
+                if len(rec.authors) > 3:
+                    print(f"              ... and {len(rec.authors) - 3} more")
+            print(f"     Year: {rec.year} | Citations: {rec.citation_count:,}")
+            print(f"     Confidence: {rec.confidence:.2f}")
+            print(f"     Intent match: {rec.citation_intent_match}")
+            print(f"     Snippet: {rec.supporting_snippet[:150]}...")
+            print(f"     Justification: {rec.justification[:200]}...")
+    else:
+        print("\n  No recommendations produced (all below confidence threshold?)")
 
     # Show any errors
     if state["errors"]:

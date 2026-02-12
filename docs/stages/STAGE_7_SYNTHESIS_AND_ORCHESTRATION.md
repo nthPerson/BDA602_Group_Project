@@ -1,6 +1,6 @@
 # Stage 7 — Agent 5 + Orchestration (LangGraph Pipeline)
 
-> **Status:** Not Started
+> **Status:** Complete
 > **Depends on:** Stage 6 (all 4 agents must be implemented)
 > **Estimated effort:** 5–7 hours
 
@@ -69,15 +69,15 @@ Agent 5 is the thinnest agent — it's mostly formatting and quality control:
 
 ## Acceptance Criteria
 
-- [ ] `app = workflow.compile()` succeeds
-- [ ] `app.invoke({"user_text": "..."})` runs all 5 agents in sequence
-- [ ] Final state contains non-empty `final_recommendations` list
-- [ ] Each `Recommendation` has all required fields (rank, paper_id, title, justification, snippet, confidence)
-- [ ] `state["metadata"]` contains timing for each agent (latency tracking)
-- [ ] `state["errors"]` is empty for a successful run
-- [ ] If Agent 3 fails, pipeline still produces results from Agents 1+2 only (graceful degradation)
-- [ ] If Agent 4 grounding fails, pipeline still produces reranked results without justifications
-- [ ] All unit and integration tests pass
+- [x] `app = workflow.compile()` succeeds
+- [x] `app.invoke({"user_text": "..."})` runs all 5 agents in sequence
+- [x] Final state contains non-empty `final_recommendations` list
+- [x] Each `Recommendation` has all required fields (rank, paper_id, title, justification, snippet, confidence)
+- [x] `state["metadata"]` contains timing for each agent (latency tracking)
+- [x] `state["errors"]` is empty for a successful run
+- [x] If Agent 3 fails, pipeline still produces results from Agents 1+2 only (graceful degradation)
+- [x] If Agent 4 grounding fails, pipeline still produces reranked results without justifications
+- [x] All unit and integration tests pass
 
 ---
 
@@ -199,5 +199,5 @@ This is fully inspectable at any point — you can see exactly what each agent p
 
 ---
 
-*Completed by: [name] on [date]*
+*Completed by: Claude on 2026-02-12*
 *Reviewed by: [name] on [date]*
