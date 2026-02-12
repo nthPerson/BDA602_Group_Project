@@ -19,7 +19,7 @@ The system models a researcher's citation workflow as a five-agent pipeline, orc
 User text
   │
   ▼
-Agent 1: Query & Intent Analysis ─── Classifies citation intent, extracts keywords,
+Agent 1: Query & Intent Analysis ──── Classifies citation intent, extracts keywords,
   │                                   reformulates query for retrieval
   ▼
 Agent 2: Dense Retrieval ──────────── Embeds query and searches Qdrant for candidate papers
@@ -50,12 +50,12 @@ Each agent reads from and writes to a shared typed state object, making every in
 | Reranking | BAAI/bge-reranker-base (cross-encoder) |
 | Vector Store | Qdrant (Docker) |
 | Metadata Store | SQLite |
-| Data Source | OpenAlex (CS.AI/LG/CL/CV, 2018-2025) |
+| Data Source | OpenAlex (CS.AI/LG/CL/CV, 2015-2025) |
 | UI | Streamlit |
 | Testing | pytest |
 | Linting | ruff |
 
-## Project Structure
+## Project Structure (under construction)
 
 ```
 src/
@@ -142,7 +142,7 @@ python scripts/index_corpus.py
 
 ## Usage
 
-### Streamlit UI
+### Streamlit UI (under construction)
 
 ```bash
 streamlit run app/streamlit_app.py
@@ -163,7 +163,7 @@ for rec in result["final_recommendations"]:
     print(f"   {rec.justification}\n")
 ```
 
-## Evaluation
+## Evaluation (under construction)
 
 The system is evaluated using retrospective citation prediction: given a paper's abstract, can the system recover the actual citations the original authors used?
 
