@@ -1,6 +1,6 @@
 # Stage 9 — Streamlit UI
 
-> **Status:** Not Started
+> **Status:** Complete
 > **Depends on:** Stage 7 (full pipeline must be operational)
 > **Estimated effort:** 4–6 hours
 >
@@ -81,15 +81,15 @@ This stage creates the **interactive web interface** for the pipeline. After thi
 
 ## Acceptance Criteria
 
-- [ ] `streamlit run app/streamlit_app.py` launches without errors
-- [ ] Pasting a paragraph and clicking "Find Citations" produces visible recommendations
-- [ ] Full pipeline completes within 30 seconds (reflected in Pipeline Status)
-- [ ] Each recommendation card shows: title, authors, year, citation count, confidence %
-- [ ] Expanding a card reveals justification and supporting snippet
-- [ ] Pipeline status updates are visible during execution
-- [ ] Empty input shows an error message (not a crash)
-- [ ] Sidebar options (year range, top-K) affect results
-- [ ] Debug panel shows PipelineState JSON and timing
+- [x] `streamlit run app/streamlit_app.py` launches without errors
+- [x] Pasting a paragraph and clicking "Find Citations" produces visible recommendations
+- [x] Full pipeline completes within 30 seconds (reflected in Pipeline Status)
+- [x] Each recommendation card shows: title, authors, year, citation count, confidence %
+- [x] Expanding a card reveals justification and supporting snippet
+- [x] Pipeline status updates are visible during execution
+- [x] Empty input shows an error message (not a crash)
+- [x] Sidebar options (year range, top-K) affect results
+- [x] Debug panel shows PipelineState JSON and timing
 
 ---
 
@@ -196,5 +196,5 @@ This also helps with debugging — if the pipeline hangs, you can see which step
 
 ---
 
-*Completed by: [name] on [date]*
+*Completed by: Claude on 2026-02-12*
 *Reviewed by: [name] on [date]*
