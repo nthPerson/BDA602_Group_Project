@@ -115,7 +115,7 @@ Update this section as stages are completed. Check the box and fill in the date.
 - [x] **Stage 5** — Agent 3: Citation Expansion (expansion_agent.py) — ✅ 2026-02-12
 - [x] **Stage 6** — Agent 4: Reranking & Grounding (reranking_agent.py) — ✅ 2026-02-12
 - [x] **Stage 7** — Agent 5 + Orchestration (synthesis_agent.py, graph.py) — ✅ 2026-02-12
-- [ ] **Stage 8** — Evaluation Framework (metrics.py, dataset.py, runner.py)
+- [x] **Stage 8** — Evaluation Framework (metrics.py, dataset.py, runner.py) — ✅ 2026-02-12
 - [ ] **Stage 9** — Streamlit UI (streamlit_app.py)
 
 ---

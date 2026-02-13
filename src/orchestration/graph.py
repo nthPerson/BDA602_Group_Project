@@ -23,6 +23,7 @@ Usage:
 import logging
 import sqlite3
 
+from dotenv import load_dotenv
 from langgraph.graph import END, StateGraph
 from openai import OpenAI
 from sentence_transformers import CrossEncoder
@@ -131,6 +132,9 @@ def build_pipeline() -> object:
     Returns:
         Compiled LangGraph application ready for invoke().
     """
+    # Load .env file to ensure OPENAI_API_KEY is in os.environ
+    load_dotenv()
+
     settings = Settings()
     openai_client = OpenAI()
 

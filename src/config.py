@@ -37,6 +37,7 @@ class Settings(BaseSettings):
 
     # ==================== Database Configuration ====================
     db_path: str = "data/papers.db"
+    data_dir: Path = Path("data")
 
     # ==================== Embedding Model Configuration ====================
     embedding_model_name: str = "BAAI/bge-base-en-v1.5"
