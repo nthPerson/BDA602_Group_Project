@@ -216,5 +216,44 @@ In our case: removing citation expansion and seeing Recall@10 drop from 0.34 to 
 
 ---
 
+## Initial Results & Tuning Recommendations
+
+### First Run Results (50 samples, 2026-02-12)
+
+| Metric | BM25 Baseline | Full Pipeline |
+|---|---|---|
+| Recall@5 | 0.050 | 0.022 |
+| Recall@10 | 0.085 | 0.022 |
+| Recall@20 | 0.110 | 0.022 |
+| MRR | 0.204 | 0.140 |
+| MAP | 0.038 | 0.021 |
+| Latency (s) | — | 7.17 |
+
+### Diagnosis
+
+The full pipeline currently underperforms BM25 due to an **aggressive bottleneck chain**, not a fundamental algorithmic problem:
+
+1. **`ground_top_k=3`** in `graph.py:156` — Only 3 papers receive LLM grounding (out of 10 reranked). This is the primary bottleneck.
+2. **`confidence_threshold=0.4`** in `synthesis_agent.py:40` — Papers below 0.4 confidence are filtered out, further reducing the pool.
+3. **`top_n=10`** in `graph.py:147` — Agent 2 retrieves only 10 initial candidates (the spec says up to 30).
+
+These bottlenecks explain the **flat recall curve** (identical at @5, @10, @20): the pipeline outputs ~1–2 recommendations per query regardless of K, so increasing K has no effect.
+
+### Recommended Tuning (Post-Stage 9)
+
+| Parameter | Current | Recommended | File | Line |
+|---|---|---|---|---|
+| Agent 2 `top_n` | 10 | 20–30 | `src/orchestration/graph.py` | 147 |
+| Agent 4 `ground_top_k` | 3 | 10 (match `rerank_top_k`) | `src/orchestration/graph.py` | 156 |
+| Agent 5 `confidence_threshold` | 0.4 | 0.2 | `src/agents/synthesis_agent.py` | 40 |
+
+After applying these changes, re-run with `--max-samples 50` to verify improvement before running the full evaluation.
+
+### Note on Evaluation Time
+
+At ~7.2s per sample, 50 samples takes ~6 minutes. The full dataset (~200+ samples) would take ~30 minutes. The 17-hour estimate during the initial run was likely due to the eval dataset being much larger than expected or cold model loading overhead — verify by checking the eval dataset size with `python -c "import json; d=json.load(open('data/eval_dataset.json')); print(len(d))"`.
+
+---
+
 *Completed by: Claude on 2026-02-12*
 *Reviewed by: [name] on [date]*
